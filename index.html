@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Поликлиника «Ренессанс» — Админка</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    :root {
+      --primary: #007bff;
+      --success: #28a745;
+      --warning: #ffc107;
+      --danger: #dc3545;
+      --light: #f8f9fa;
+      --dark: #343a40;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+    }
+    .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 15px;
+      text-align: center;
+      border-radius: 8px 8px 0 0;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    header button {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #ff6b6b;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .hidden { display: none !important; }
+    .card {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .tabs button {
+      flex: 1;
+      min-width: 120px;
+      padding: 10px;
+      background: #e9ecef;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .tabs button.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover { opacity: 0.9; }
+    .btn-success { background: var(--success); }
+    .btn-danger { background: var(--danger); }
+    .btn-warning { background: var(--warning); color: var(--dark); }
+    .result {
+      background: #eef6ff;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 15px;
+      white-space: pre-wrap;
+    }
+    .ticket {
+      border: 2px dashed #007bff;
+      padding: 20px;
+      margin: 20px 0;
+      background: #f9f9ff;
+      text-align: center;
+    }
+    .ticket h2 { color: var(--primary); }
+    .ticket p { margin: 8px 0; }
+    .ticket-id { font-size: 12px; color: #666; margin-top: 15px; }
+    .doctor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .doctor-card {
+      border: 1px solid #eee;
+      padding: 12px;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+    @media print {
+      body * { visibility: hidden; }
+      .ticket, .ticket * { visibility: visible; }
+      .ticket { position: absolute; left: 0; top: 0; width: 100%; }
+      button { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Экран входа -->
+<div id="loginScreen" class="container">
+  <div class="card" style="max-width:400px; margin:100px auto;">
+    <h2 style="text-align:center; margin-bottom:20px;">🔐 Вход для администратора</h2>
+    <input type="text" id="login" placeholder="Логин" value="dem" autocomplete="off" />
+    <input type="password" id="password" placeholder="Пароль" value="0506" autocomplete="off" />
+    <button onclick="login()">Войти</button>
+    <p style="font-size:12px; color:#666; margin-top:15px; text-align:center;">
+      Логин: <b>dem</b> | Пароль: <b>0506</b>
+    </p>
+  </div>
+</div>
+
+<!-- Основное приложение -->
+<div id="mainApp" class="container hidden">
+  <header>
+    <h1>🏥 Поликлиника «Ренессанс»</h1>
+    <button onclick="logout()">Выйти</button>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="register">➕ Регистрация</button>
+    <button class="tab-btn" data-tab="search">🔍 Поиск и редактирование</button>
+    <button class="tab-btn" data-tab="appointment">📅 Запись к врачу</button>
+    <button class="tab-btn" data-tab="medical">🩺 Медкарта</button>
+    <button class="tab-btn" data-tab="doctors">👨‍⚕️ Врачи</button>
+    <button class="tab-btn" data-tab="tickets">🎫 Талоны</button>
+  </div>
+
+  <!-- РЕГИСТРАЦИЯ -->
+  <div id="register" class="card tab-content active">
+    <h3>Регистрация нового пациента</h3>
+    <input id="regFio" placeholder="ФИО полностью (Иванов Иван Иванович)" />
+    <input id="regBirth" type="date" />
+    <select id="regGender"><option value="">Пол</option><option value="М">Мужской</option><option value="Ж">Женский</option></select>
+    <input id="regPhone" placeholder="Телефон (+79991234567)" />
+    <input id="regEmail" placeholder="Email (опционально)" type="email" />
+    <input id="regAddress" placeholder="Адрес проживания" />
+    <input id="regPassport" placeholder="Паспорт (серия номер, например: 4507 123456)" />
+    <input id="regSnils" placeholder="СНИЛС (123-456-789 00)" />
+    <input id="regInn" placeholder="ИНН (12 цифр)" />
+    <button class="btn-success" onclick="registerPatient()">✅ Зарегистрировать</button>
+  </div>
+
+  <!-- ПОИСК И РЕДАКТИРОВАНИЕ -->
+  <div id="search" class="card tab-content hidden">
+    <h3>Поиск и редактирование пациента</h3>
+    <input id="searchQuery" placeholder="ФИО, паспорт, СНИЛС, телефон..." />
+    <button onclick="searchPatient()">Найти</button>
+    <div id="searchResult" class="result"></div>
+    <div id="editForm" class="hidden">
+      <h4 style="margin:15px 0 10px;">✏️ Редактирование</h4>
+      <input id="editKey" type="hidden" />
+      <input id="editFio" placeholder="ФИО" />
+      <input id="editBirth" type="date" />
+      <select id="editGender"><option value="">Пол</option><option value="М">Мужской</option><option value="Ж">Женский</option></select>
+      <input id="editPhone" placeholder="Телефон" />
+      <input id="editEmail" placeholder="Email" />
+      <input id="editAddress" placeholder="Адрес" />
+      <input id="editPassport" placeholder="Паспорт" />
+      <input id="editSnils" placeholder="СНИЛС" />
+      <input id="editInn" placeholder="ИНН" />
+      <button class="btn-success" onclick="savePatient()">💾 Сохранить</button>
+      <button class="btn-danger" onclick="cancelEdit()">Отмена</button>
+    </div>
+  </div>
+
+  <!-- ЗАПИСЬ -->
+  <div id="appointment" class="card tab-content hidden">
+    <h3>Запись к врачу</h3>
+    <input id="appPassport" placeholder="Паспорт пациента (обязательно)" />
+    <select id="appDoctor"><option value="">— Выберите врача —</option></select>
+    <input id="appDate" type="date" />
+    <select id="appTime"><option value="">— Выберите время —</option></select>
+    <button class="btn-success" onclick="bookAppointment()">📅 Записать</button>
+    <div id="appResult" class="result"></div>
+  </div>
+
+  <!-- МЕДКАРТА -->
+  <div id="medical" class="card tab-content hidden">
+    <h3>Медицинская карта</h3>
+    <input id="medPassport" placeholder="Паспорт пациента" />
+    <button onclick="loadMedicalRecord()">Загрузить карту</button>
+    <div id="medicalData" class="result"></div>
+
+    <h4 style="margin-top:20px;">Добавить новое посещение</h4>
+    <textarea id="medDiagnosis" placeholder="Диагноз (например: ОРВИ, гипертония)" rows="2"></textarea>
+    <textarea id="medConclusion" placeholder="Заключение врача" rows="3"></textarea>
+    <textarea id="medPrescription" placeholder="Назначения / Рекомендации" rows="2"></textarea>
+    <button class="btn-success" onclick="addMedicalVisit()">➕ Добавить запись</button>
+  </div>
+
+  <!-- ВРАЧИ -->
+  <div id="doctors" class="card tab-content hidden">
+    <h3>Список врачей</h3>
+    <div class="doctor-grid" id="doctorsList">Загрузка...</div>
+  </div>
+
+  <!-- ТАЛОНЫ -->
+  <div id="tickets" class="card tab-content hidden">
+    <h3>Печать талона</h3>
+    <p>После записи к врачу талон появится здесь автоматически.</p>
+    <div id="ticketContainer"></div>
+  </div>
+</div>
+
+<script>
+  // === Firebase ===
+  const firebaseConfig = {
+    databaseURL: "https://renessans-bank-3df94-default-rtdb.europe-west1.firebasedatabase.app/"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // === Вход / Выход ===
+  function login() {
+    const l = document.getElementById("login").value.trim();
+    const p = document.getElementById("password").value.trim();
+    if (l === "dem" && p === "0506") {
+      document.getElementById("loginScreen").classList.add("hidden");
+      document.getElementById("mainApp").classList.remove("hidden");
+      loadDoctors();
+      initStaff();
+    } else {
+      alert("❌ Неверный логин или пароль");
+    }
+  }
+  function logout() {
+    document.getElementById("mainApp").classList.add("hidden");
+    document.getElementById("loginScreen").classList.remove("hidden");
+  }
+
+  // === Вкладки ===
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.remove('hidden');
+    });
+  });
+
+  // === Инициализация врачей ===
+  function initStaff() {
+    db.ref("staff").once("value", snap => {
+      if (snap.exists()) return;
+      const today = new Date();
+      const schedule = {};
+      for (let i = 0; i < 14; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() + i);
+        const dateStr = d.toISOString().split('T')[0];
+        schedule[dateStr] = ["09:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00"];
+      }
+      db.ref("staff").set({
+        doc1: { fio: "Иванов Иван Иванович", specialty: "Терапевт", experience: "12 лет", schedule },
+        doc2: { fio: "Петрова Анна Сергеевна", specialty: "Офтальмолог", experience: "8 лет", schedule },
+        doc3: { fio: "Сидоров Дмитрий Алексеевич", specialty: "Хирург", experience: "15 лет", schedule }
+      });
+    });
+  }
+
+  // === Загрузка врачей в селект и список ===
+  function loadDoctors() {
+    const sel = document.getElementById("appDoctor");
+    sel.innerHTML = '<option value="">— Выберите врача —</option>';
+    const list = document.getElementById("doctorsList");
+    list.innerHTML = "Загрузка...";
+
+    db.ref("staff").once("value", snap => {
+      list.innerHTML = "";
+      snap.forEach(doc => {
+        const d = doc.val();
+        const opt = document.createElement("option");
+        opt.value = doc.key;
+        opt.textContent = `${d.fio} (${d.specialty})`;
+        sel.appendChild(opt);
+
+        const card = document.createElement("div");
+        card.className = "doctor-card";
+        card.innerHTML = `<b>${d.fio}</b><br><i>${d.specialty}</i><br>Стаж: ${d.experience}`;
+        list.appendChild(card);
+      });
+    });
+  }
+
+  // === Регистрация пациента ===
+  function registerPatient() {
+    const fio = document.getElementById("regFio").value.trim();
+    const birth = document.getElementById("regBirth").value;
+    const gender = document.getElementById("regGender").value;
+    const phone = document.getElementById("regPhone").value.trim();
+    const email = document.getElementById("regEmail").value.trim();
+    const address = document.getElementById("regAddress").value.trim();
+    const passport = document.getElementById("regPassport").value.trim();
+    const snils = document.getElementById("regSnils").value.trim();
+    const inn = document.getElementById("regInn").value.trim();
+
+    if (!fio || !passport || !birth) {
+      alert("❌ Обязательно: ФИО, паспорт, дата рождения");
+      return;
+    }
+
+    const key = passport.replace(/\s+/g, "_");
+    db.ref("patients/" + key).set({
+      fio, birth, gender, phone, email, address, passport, snils, inn,
+      createdAt: new Date().toISOString()
+    }).then(() => {
+      alert("✅ Пациент зарегистрирован!");
+      document.querySelectorAll("#register input").forEach(el => el.value = "");
+    });
+  }
+
+  // === Поиск пациента ===
+  function searchPatient() {
+    const q = document.getElementById("searchQuery").value.trim().toLowerCase();
+    if (!q) return;
+
+    db.ref("patients").once("value", snap => {
+      let found = null;
+      snap.forEach(p => {
+        const pat = p.val();
+        const fields = [pat.fio, pat.passport, pat.snils, pat.phone, pat.email, pat.address];
+        if (fields.some(f => f && f.toLowerCase().includes(q))) {
+          found = { key: p.key, ...pat };
+          return false; // break
+        }
+      });
+
+      const res = document.getElementById("searchResult");
+      const edit = document.getElementById("editForm");
+      if (found) {
+        res.innerHTML = `<p><b>${found.fio}</b><br>Паспорт: ${found.passport}<br>Телефон: ${found.phone || '—'}</p>`;
+        document.getElementById("editKey").value = found.key;
+        document.getElementById("editFio").value = found.fio || '';
+        document.getElementById("editBirth").value = found.birth || '';
+        document.getElementById("editGender").value = found.gender || '';
+        document.getElementById("editPhone").value = found.phone || '';
+        document.getElementById("editEmail").value = found.email || '';
+        document.getElementById("editAddress").value = found.address || '';
+        document.getElementById("editPassport").value = found.passport || '';
+        document.getElementById("editSnils").value = found.snils || '';
+        document.getElementById("editInn").value = found.inn || '';
+        edit.classList.remove("hidden");
+      } else {
+        res.innerHTML = "❌ Пациент не найден";
+        edit.classList.add("hidden");
+      }
+    });
+  }
+
+  // === Сохранение изменений ===
+  function savePatient() {
+    const key = document.getElementById("editKey").value;
+    if (!key) return alert("❌ Ошибка ключа");
+
+    const data = {
+      fio: document.getElementById("editFio").value.trim(),
+      birth: document.getElementById("editBirth").value,
+      gender: document.getElementById("editGender").value,
+      phone: document.getElementById("editPhone").value.trim(),
+      email: document.getElementById("editEmail").value.trim(),
+      address: document.getElementById("editAddress").value.trim(),
+      passport: document.getElementById("editPassport").value.trim(),
+      snils: document.getElementById("editSnils").value.trim(),
+      inn: document.getElementById("editInn").value.trim()
+    };
+
+    if (!data.fio || !data.passport) return alert("❌ ФИО и паспорт обязательны");
+
+    db.ref("patients/" + key).update(data).then(() => {
+      alert("✅ Данные обновлены!");
+      document.getElementById("editForm").classList.add("hidden");
+      document.getElementById("searchQuery").value = "";
+      document.getElementById("searchResult").innerHTML = "<p>Изменения сохранены.</p>";
+    });
+  }
+
+  function cancelEdit() {
+    document.getElementById("editForm").classList.add("hidden");
+  }
+
+  // === Запись к врачу ===
+  document.getElementById("appDoctor").addEventListener("change", updateAvailableTimes);
+  document.getElementById("appDate").addEventListener("change", updateAvailableTimes);
+
+  function updateAvailableTimes() {
+    const docId = document.getElementById("appDoctor").value;
+    const date = document.getElementById("appDate").value;
+    const sel = document.getElementById("appTime");
+    sel.innerHTML = '<option value="">— Выберите время —</option>';
+    if (!docId || !date) return;
+
+    db.ref(`staff/${docId}/schedule/${date}`).once("value", scheduleSnap => {
+      const all = scheduleSnap.val() || [];
+      db.ref("appointments").orderByChild("doctorDate").equalTo(`${docId}_${date}`).once("value", appts => {
+        const busy = {};
+        appts.forEach(a => { busy[a.val().time] = true; });
+        all.filter(t => !busy[t]).forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = t;
+          opt.textContent = t;
+          sel.appendChild(opt);
+        });
+      });
+    });
+  }
+
+  function bookAppointment() {
+    const passport = document.getElementById("appPassport").value.trim();
+    const docId = document.getElementById("appDoctor").value;
+    const date = document.getElementById("appDate").value;
+    const time = document.getElementById("appTime").value;
+
+    if (!passport || !docId || !date || !time) {
+      alert("❌ Все поля обязательны");
+      return;
+    }
+
+    const key = `${date}_${docId}_${time}`;
+    const ticketId = "T" + Date.now().toString(36).toUpperCase();
+
+    db.ref("appointments/" + key).set({
+      patientPassport: passport,
+      doctorId: docId,
+      date, time,
+      ticketId,
+      doctorDate: `${docId}_${date}`,
+      status: "confirmed",
+      createdAt: new Date().toISOString()
+    }).then(() => {
+      document.getElementById("appResult").innerHTML = "✅ Запись создана!";
+      showTicket(passport, docId, date, time, ticketId);
+      updateAvailableTimes();
+    });
+  }
+
+  // === Талон ===
+  function showTicket(passport, doctorId, date, time, ticketId) {
+    Promise.all([
+      db.ref("patients/" + passport.replace(/\s+/g, "_")).once("value"),
+      db.ref("staff/" + doctorId).once("value")
+    ]).then(([patSnap, docSnap]) => {
+      const pat = patSnap.val();
+      const doc = docSnap.val();
+
+      const html = `
+        <div class="ticket" id="ticketPrint">
+          <div class="ticket-header">
+            <h2>Поликлиника «Ренессанс»</h2>
+            <p>Талон на приём</p>
+          </div>
+          <div class="ticket-body">
+            <p><b>Пациент:</b> ${pat?.fio || '—'}</p>
+            <p><b>Врач:</b> ${doc?.fio || '—'} (${doc?.specialty || '—'})</p>
+            <p><b>Дата и время:</b> ${date} в ${time}</p>
+            <p><b>Кабинет:</b> 305</p>
+            <p class="ticket-id">ID талона: ${ticketId}</p>
+          </div>
+          <div class="ticket-footer">Пожалуйста, приходите за 10 минут до приёма.</div>
+        </div>
+        <button onclick="window.print()">🖨️ Распечатать талон</button>
+      `;
+      document.getElementById("ticketContainer").innerHTML = html;
+      document.querySelector('.tab-btn[data-tab="tickets"]').click();
+    });
+  }
+
+  // === Медкарта ===
+  function loadMedicalRecord() {
+    const passport = document.getElementById("medPassport").value.trim();
+    if (!passport) return;
+    const key = passport.replace(/\s+/g, "_");
+    db.ref("medicalRecords/" + key).once("value", snap => {
+      const data = snap.val();
+      const div = document.getElementById("medicalData");
+      if (!data || !data.visits || data.visits.length === 0) {
+        div.innerHTML = "<p>Медкарта пуста.</p>";
+        return;
+      }
+      div.innerHTML = data.visits.reverse().map(v => 
+        `<p><b>${v.date}</b><br>🩺 Диагноз: ${v.diagnosis || '—'}<br>📝 Заключение: ${v.conclusion || '—'}<br>💊 Назначения: ${v.prescription || '—'}</p><hr>`
+      ).join("");
+    });
+  }
+
+  function addMedicalVisit() {
+    const passport = document.getElementById("medPassport").value.trim();
+    const diagnosis = document.getElementById("medDiagnosis").value.trim();
+    const conclusion = document.getElementById("medConclusion").value.trim();
+    const prescription = document.getElementById("medPrescription").value.trim();
+
+    if (!passport) return alert("Укажите паспорт");
+    const key = passport.replace(/\s+/g, "_");
+    const newVisit = {
+      date: new Date().toISOString().split('T')[0],
+      diagnosis,
+      conclusion,
+      prescription,
+      doctor: "Администратор",
+      timestamp: Date.now()
+    };
+
+    db.ref("medicalRecords/" + key).transaction(record => {
+      if (!record) record = { visits: [] };
+      record.visits.push(newVisit);
+      return record;
+    }).then(() => {
+      alert("✅ Запись добавлена в медкарту");
+      loadMedicalRecord();
+      ["medDiagnosis", "medConclusion", "medPrescription"].forEach(id => {
+        document.getElementById(id).value = "";
+      });
+    });
+  }
+
+  // === Инициализация ===
+  window.addEventListener('load', () => {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById("appDate")?.setAttribute("min", today);
+    document.getElementById("regBirth")?.setAttribute("max", today);
+  });
+</script>
+</body>
+</html>
