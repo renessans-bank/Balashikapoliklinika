@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Поликлиника «Ренессанс» — Админка</title>
+  <title>Поликлиника «Ренессанс» — Админка с графиком на год</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
@@ -15,38 +15,59 @@
       --light: #f8f9fa;
       --dark: #343a40;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f5f7fa;
+      background-color: #f5f7fa;
       color: #333;
       line-height: 1.6;
+      padding: 0;
+      margin: 0;
     }
-    .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
     header {
-      background: var(--primary);
+      background-color: var(--primary);
       color: white;
-      padding: 15px;
+      padding: 15px 20px;
       text-align: center;
       border-radius: 8px 8px 0 0;
       margin-bottom: 20px;
       position: relative;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    header h1 {
+      font-size: 1.8rem;
+      margin: 0;
     }
     header button {
       position: absolute;
-      right: 15px;
+      right: 20px;
       top: 50%;
       transform: translateY(-50%);
-      background: #ff6b6b;
-      border: none;
+      background-color: #ff6b6b;
       color: white;
-      padding: 5px 10px;
+      border: none;
+      padding: 6px 12px;
       border-radius: 4px;
       cursor: pointer;
+      font-weight: bold;
     }
-    .hidden { display: none !important; }
+    header button:hover {
+      background-color: #ff5252;
+    }
+    .hidden {
+      display: none !important;
+    }
     .card {
-      background: white;
+      background-color: white;
       padding: 20px;
       margin-bottom: 20px;
       border-radius: 8px;
@@ -62,71 +83,141 @@
       flex: 1;
       min-width: 120px;
       padding: 10px;
-      background: #e9ecef;
-      border: 1px solid #ddd;
+      background-color: #e9ecef;
+      border: 1px solid #ced4da;
       border-radius: 6px;
       cursor: pointer;
       font-weight: bold;
+      transition: all 0.2s;
+    }
+    .tabs button:hover {
+      background-color: #dee2e6;
     }
     .tabs button.active {
-      background: var(--primary);
+      background-color: var(--primary);
       color: white;
       border-color: var(--primary);
     }
-    input, select, textarea, button {
+    input,
+    select,
+    textarea,
+    button {
       width: 100%;
       padding: 10px;
       margin: 6px 0;
-      border: 1px solid #ccc;
+      border: 1px solid #ced4da;
       border-radius: 4px;
+      font-size: 1rem;
     }
     button {
-      background: var(--primary);
+      background-color: var(--primary);
       color: white;
       border: none;
       cursor: pointer;
       font-weight: bold;
     }
-    button:hover { opacity: 0.9; }
-    .btn-success { background: var(--success); }
-    .btn-danger { background: var(--danger); }
-    .btn-warning { background: var(--warning); color: var(--dark); }
+    button:hover {
+      opacity: 0.9;
+    }
+    .btn-success {
+      background-color: var(--success);
+    }
+    .btn-warning {
+      background-color: var(--warning);
+      color: var(--dark);
+    }
+    .btn-danger {
+      background-color: var(--danger);
+    }
     .result {
-      background: #eef6ff;
+      background-color: #eef6ff;
       padding: 15px;
       border-radius: 6px;
       margin-top: 15px;
       white-space: pre-wrap;
     }
-    .ticket {
-      border: 2px dashed #007bff;
-      padding: 20px;
-      margin: 20px 0;
-      background: #f9f9ff;
-      text-align: center;
-    }
-    .ticket h2 { color: var(--primary); }
-    .ticket p { margin: 8px 0; }
-    .ticket-id { font-size: 12px; color: #666; margin-top: 15px; }
     .doctor-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 15px;
-      margin-top: 15px;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
     }
     .doctor-card {
-      border: 1px solid #eee;
-      padding: 12px;
-      border-radius: 6px;
-      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      padding: 14px;
+      border-radius: 8px;
+      background-color: #fafafa;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+    .doctor-card h4 {
+      margin: 0 0 8px 0;
+      color: var(--dark);
+    }
+    .doctor-card p {
+      margin: 4px 0;
+      font-size: 0.95rem;
+    }
+    .ticket {
+      border: 2px dashed var(--primary);
+      padding: 20px;
+      margin: 20px 0;
+      background-color: #f9f9ff;
+      text-align: center;
+      border-radius: 8px;
+    }
+    .ticket h3 {
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+    .ticket p {
+      margin: 6px 0;
+    }
+    .ticket-id {
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+    th,
+    td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background-color: #f8f9fa;
+      font-weight: bold;
+    }
     @media print {
-      body * { visibility: hidden; }
-      .ticket, .ticket * { visibility: visible; }
-      .ticket { position: absolute; left: 0; top: 0; width: 100%; }
-      button { display: none !important; }
+      body * {
+        visibility: hidden;
+      }
+      .ticket,
+      .ticket * {
+        visibility: visible;
+      }
+      .ticket {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      button {
+        display: none !important;
+      }
+    }
+    .footer-note {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #6c757d;
+      margin-top: 30px;
     }
   </style>
 </head>
@@ -134,13 +225,14 @@
 
 <!-- Экран входа -->
 <div id="loginScreen" class="container">
-  <div class="card" style="max-width:400px; margin:100px auto;">
-    <h2 style="text-align:center; margin-bottom:20px;">🔐 Вход для администратора</h2>
+  <div class="card" style="max-width: 420px; margin: 100px auto;">
+    <h2 style="text-align: center; margin-bottom: 20px; color: var(--dark);">🔐 Вход для администратора</h2>
     <input type="text" id="login" placeholder="Логин" value="dem" autocomplete="off" />
     <input type="password" id="password" placeholder="Пароль" value="0506" autocomplete="off" />
-    <button onclick="login()">Войти</button>
-    <p style="font-size:12px; color:#666; margin-top:15px; text-align:center;">
-      Логин: <b>dem</b> | Пароль: <b>0506</b>
+    <button onclick="login()">Войти в систему</button>
+    <p style="font-size: 13px; color: #666; margin-top: 15px; text-align: center;">
+      Стандартные учётные данные:<br>
+      <b>Логин:</b> dem &nbsp; | &nbsp; <b>Пароль:</b> 0506
     </p>
   </div>
 </div>
@@ -148,174 +240,269 @@
 <!-- Основное приложение -->
 <div id="mainApp" class="container hidden">
   <header>
-    <h1>🏥 Поликлиника «Ренессанс»</h1>
+    <h1>🏥 Поликлиника «Ренессанс» — Административная панель</h1>
     <button onclick="logout()">Выйти</button>
   </header>
 
   <div class="tabs">
-    <button class="tab-btn active" data-tab="register">➕ Регистрация</button>
+    <button class="tab-btn active" data-tab="doctors">👨‍⚕️ Врачи и график (365 дней)</button>
+    <button class="tab-btn" data-tab="register">➕ Регистрация пациента</button>
     <button class="tab-btn" data-tab="search">🔍 Поиск и редактирование</button>
     <button class="tab-btn" data-tab="appointment">📅 Запись к врачу</button>
-    <button class="tab-btn" data-tab="medical">🩺 Медкарта</button>
-    <button class="tab-btn" data-tab="doctors">👨‍⚕️ Врачи</button>
+    <button class="tab-btn" data-tab="medical">🩺 Медицинская карта</button>
     <button class="tab-btn" data-tab="tickets">🎫 Талоны</button>
   </div>
 
+  <!-- ВРАЧИ И ГРАФИК -->
+  <div id="doctors" class="card tab-content active">
+    <h3>Список врачей и расписание на год вперёд</h3>
+    <p>Система автоматически создаёт расписание на 365 календарных дней (только будние дни: пн–пт).</p>
+    <div id="doctorsList">Загрузка списка врачей...</div>
+  </div>
+
   <!-- РЕГИСТРАЦИЯ -->
-  <div id="register" class="card tab-content active">
+  <div id="register" class="card tab-content hidden">
     <h3>Регистрация нового пациента</h3>
     <input id="regFio" placeholder="ФИО полностью (Иванов Иван Иванович)" />
     <input id="regBirth" type="date" />
-    <select id="regGender"><option value="">Пол</option><option value="М">Мужской</option><option value="Ж">Женский</option></select>
+    <select id="regGender">
+      <option value="">Пол</option>
+      <option value="М">Мужской</option>
+      <option value="Ж">Женский</option>
+    </select>
     <input id="regPhone" placeholder="Телефон (+79991234567)" />
     <input id="regEmail" placeholder="Email (опционально)" type="email" />
     <input id="regAddress" placeholder="Адрес проживания" />
     <input id="regPassport" placeholder="Паспорт (серия номер, например: 4507 123456)" />
     <input id="regSnils" placeholder="СНИЛС (123-456-789 00)" />
     <input id="regInn" placeholder="ИНН (12 цифр)" />
-    <button class="btn-success" onclick="registerPatient()">✅ Зарегистрировать</button>
+    <button class="btn-success" onclick="registerPatient()">✅ Зарегистрировать пациента</button>
   </div>
 
   <!-- ПОИСК И РЕДАКТИРОВАНИЕ -->
   <div id="search" class="card tab-content hidden">
-    <h3>Поиск и редактирование пациента</h3>
-    <input id="searchQuery" placeholder="ФИО, паспорт, СНИЛС, телефон..." />
-    <button onclick="searchPatient()">Найти</button>
+    <h3>Поиск и редактирование данных пациента</h3>
+    <input id="searchQuery" placeholder="Введите ФИО, паспорт, СНИЛС или телефон..." />
+    <button onclick="searchPatient()">Найти пациента</button>
     <div id="searchResult" class="result"></div>
     <div id="editForm" class="hidden">
-      <h4 style="margin:15px 0 10px;">✏️ Редактирование</h4>
+      <h4 style="margin: 16px 0 10px;">✏️ Редактирование персональных данных</h4>
       <input id="editKey" type="hidden" />
       <input id="editFio" placeholder="ФИО" />
       <input id="editBirth" type="date" />
-      <select id="editGender"><option value="">Пол</option><option value="М">Мужской</option><option value="Ж">Женский</option></select>
+      <select id="editGender">
+        <option value="">Пол</option>
+        <option value="М">Мужской</option>
+        <option value="Ж">Женский</option>
+      </select>
       <input id="editPhone" placeholder="Телефон" />
       <input id="editEmail" placeholder="Email" />
       <input id="editAddress" placeholder="Адрес" />
       <input id="editPassport" placeholder="Паспорт" />
       <input id="editSnils" placeholder="СНИЛС" />
       <input id="editInn" placeholder="ИНН" />
-      <button class="btn-success" onclick="savePatient()">💾 Сохранить</button>
+      <button class="btn-success" onclick="savePatient()">💾 Сохранить изменения</button>
       <button class="btn-danger" onclick="cancelEdit()">Отмена</button>
     </div>
   </div>
 
-  <!-- ЗАПИСЬ -->
+  <!-- ЗАПИСЬ К ВРАЧУ -->
   <div id="appointment" class="card tab-content hidden">
-    <h3>Запись к врачу</h3>
+    <h3>Запись пациента на приём</h3>
     <input id="appPassport" placeholder="Паспорт пациента (обязательно)" />
-    <select id="appDoctor"><option value="">— Выберите врача —</option></select>
+    <select id="appDoctor">
+      <option value="">— Выберите врача —</option>
+    </select>
     <input id="appDate" type="date" />
-    <select id="appTime"><option value="">— Выберите время —</option></select>
-    <button class="btn-success" onclick="bookAppointment()">📅 Записать</button>
+    <select id="appTime">
+      <option value="">— Выберите время —</option>
+    </select>
+    <button class="btn-success" onclick="bookAppointment()">📅 Подтвердить запись</button>
     <div id="appResult" class="result"></div>
   </div>
 
-  <!-- МЕДКАРТА -->
+  <!-- МЕДИЦИНСКАЯ КАРТА -->
   <div id="medical" class="card tab-content hidden">
-    <h3>Медицинская карта</h3>
+    <h3>Медицинская карта пациента</h3>
     <input id="medPassport" placeholder="Паспорт пациента" />
-    <button onclick="loadMedicalRecord()">Загрузить карту</button>
+    <button onclick="loadMedicalRecord()">Загрузить медкарту</button>
     <div id="medicalData" class="result"></div>
 
-    <h4 style="margin-top:20px;">Добавить новое посещение</h4>
-    <textarea id="medDiagnosis" placeholder="Диагноз (например: ОРВИ, гипертония)" rows="2"></textarea>
+    <h4 style="margin-top: 20px;">Добавить новое посещение</h4>
+    <textarea id="medDiagnosis" placeholder="Диагноз (например: ОРВИ, артериальная гипертензия)" rows="2"></textarea>
     <textarea id="medConclusion" placeholder="Заключение врача" rows="3"></textarea>
-    <textarea id="medPrescription" placeholder="Назначения / Рекомендации" rows="2"></textarea>
-    <button class="btn-success" onclick="addMedicalVisit()">➕ Добавить запись</button>
-  </div>
-
-  <!-- ВРАЧИ -->
-  <div id="doctors" class="card tab-content hidden">
-    <h3>Список врачей</h3>
-    <div class="doctor-grid" id="doctorsList">Загрузка...</div>
+    <textarea id="medPrescription" placeholder="Назначения, рекомендации, анализы" rows="2"></textarea>
+    <button class="btn-success" onclick="addMedicalVisit()">➕ Добавить запись в медкарту</button>
   </div>
 
   <!-- ТАЛОНЫ -->
   <div id="tickets" class="card tab-content hidden">
-    <h3>Печать талона</h3>
-    <p>После записи к врачу талон появится здесь автоматически.</p>
+    <h3>Печать талона на приём</h3>
+    <p>После успешной записи талон появится ниже. Нажмите «Распечатать», чтобы распечатать или сохранить как PDF.</p>
     <div id="ticketContainer"></div>
+  </div>
+
+  <div class="footer-note">
+    Система поликлиники «Ренессанс» — версия 1.0 | Все права защищены © 2025
   </div>
 </div>
 
 <script>
-  // === Firebase ===
+  // === Инициализация Firebase ===
   const firebaseConfig = {
     databaseURL: "https://renessans-bank-3df94-default-rtdb.europe-west1.firebasedatabase.app/"
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // === Вход / Выход ===
+  // === Функция входа ===
   function login() {
-    const l = document.getElementById("login").value.trim();
-    const p = document.getElementById("password").value.trim();
-    if (l === "dem" && p === "0506") {
+    const loginValue = document.getElementById("login").value.trim();
+    const passwordValue = document.getElementById("password").value.trim();
+    if (loginValue === "dem" && passwordValue === "0506") {
       document.getElementById("loginScreen").classList.add("hidden");
       document.getElementById("mainApp").classList.remove("hidden");
-      loadDoctors();
-      initStaff();
+      initializeSystem();
     } else {
-      alert("❌ Неверный логин или пароль");
+      alert("❌ Неверный логин или пароль. Попробуйте снова.");
     }
   }
+
+  // === Функция выхода ===
   function logout() {
     document.getElementById("mainApp").classList.add("hidden");
     document.getElementById("loginScreen").classList.remove("hidden");
   }
 
-  // === Вкладки ===
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-      btn.classList.add('active');
-      document.getElementById(btn.dataset.tab).classList.remove('hidden');
+  // === Переключение вкладок ===
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll('.tab-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+        button.classList.add('active');
+        const tabId = button.getAttribute('data-tab');
+        document.getElementById(tabId).classList.remove('hidden');
+      });
     });
   });
 
-  // === Инициализация врачей ===
-  function initStaff() {
-    db.ref("staff").once("value", snap => {
-      if (snap.exists()) return;
-      const today = new Date();
-      const schedule = {};
-      for (let i = 0; i < 14; i++) {
-        const d = new Date(today);
-        d.setDate(d.getDate() + i);
-        const dateStr = d.toISOString().split('T')[0];
-        schedule[dateStr] = ["09:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00"];
-      }
-      db.ref("staff").set({
-        doc1: { fio: "Иванов Иван Иванович", specialty: "Терапевт", experience: "12 лет", schedule },
-        doc2: { fio: "Петрова Анна Сергеевна", specialty: "Офтальмолог", experience: "8 лет", schedule },
-        doc3: { fio: "Сидоров Дмитрий Алексеевич", specialty: "Хирург", experience: "15 лет", schedule }
-      });
-    });
+  // === Генерация расписания на 365 дней (только будни) ===
+  function generateFullYearSchedule() {
+    const schedule = {};
+    const today = new Date();
+    const timeSlots = ["09:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00"];
+    for (let i = 0; i < 365; i++) {
+      const currentDate = new Date(today);
+      currentDate.setDate(today.getDate() + i);
+      const dayOfWeek = currentDate.getDay();
+      if (dayOfWeek === 0 || dayOfWeek === 6) continue; // Пропускаем воскресенье (0) и субботу (6)
+      const dateKey = currentDate.toISOString().split('T')[0];
+      schedule[dateKey] = [...timeSlots];
+    }
+    return schedule;
   }
 
-  // === Загрузка врачей в селект и список ===
-  function loadDoctors() {
-    const sel = document.getElementById("appDoctor");
-    sel.innerHTML = '<option value="">— Выберите врача —</option>';
-    const list = document.getElementById("doctorsList");
-    list.innerHTML = "Загрузка...";
-
-    db.ref("staff").once("value", snap => {
-      list.innerHTML = "";
-      snap.forEach(doc => {
-        const d = doc.val();
-        const opt = document.createElement("option");
-        opt.value = doc.key;
-        opt.textContent = `${d.fio} (${d.specialty})`;
-        sel.appendChild(opt);
-
-        const card = document.createElement("div");
-        card.className = "doctor-card";
-        card.innerHTML = `<b>${d.fio}</b><br><i>${d.specialty}</i><br>Стаж: ${d.experience}`;
-        list.appendChild(card);
+  // === Инициализация системы: создание врачей и графика ===
+  function initializeSystem() {
+    db.ref("staff").once("value")
+      .then(snapshot => {
+        if (snapshot.exists()) {
+          console.log("✅ Врачи уже существуют в базе данных.");
+        } else {
+          const fullYearSchedule = generateFullYearSchedule();
+          const doctorsData = {
+            doc1: {
+              fio: "Иванов Иван Иванович",
+              specialty: "Терапевт",
+              experience: "12 лет",
+              schedule: fullYearSchedule
+            },
+            doc2: {
+              fio: "Петрова Анна Сергеевна",
+              specialty: "Офтальмолог",
+              experience: "8 лет",
+              schedule: fullYearSchedule
+            },
+            doc3: {
+              fio: "Сидоров Дмитрий Алексеевич",
+              specialty: "Хирург",
+              experience: "15 лет",
+              schedule: fullYearSchedule
+            }
+          };
+          return db.ref("staff").set(doctorsData);
+        }
+      })
+      .then(() => {
+        console.log("✅ Система инициализирована: 3 врача, график на 365 дней.");
+        loadDoctorsList();
+        loadDoctorsToAppointmentSelect();
+      })
+      .catch(error => {
+        console.error("❌ Ошибка инициализации:", error);
+        alert("Не удалось инициализировать систему. Проверьте подключение к Firebase.");
       });
-    });
+  }
+
+  // === Загрузка списка врачей для отображения ===
+  function loadDoctorsList() {
+    const container = document.getElementById("doctorsList");
+    container.innerHTML = "Загрузка...";
+
+    db.ref("staff").once("value")
+      .then(snapshot => {
+        if (snapshot.exists()) {
+          container.innerHTML = "";
+          let doctorCount = 0;
+          snapshot.forEach(childSnapshot => {
+            const doctor = childSnapshot.val();
+            const scheduleDates = Object.keys(doctor.schedule).sort();
+            const nextThreeDates = scheduleDates.slice(0, 3).join(", ");
+            const totalWorkDays = scheduleDates.length;
+
+            const doctorCard = document.createElement("div");
+            doctorCard.className = "doctor-card";
+            doctorCard.innerHTML = `
+              <h4>${doctor.fio}</h4>
+              <p><strong>Специальность:</strong> ${doctor.specialty}</p>
+              <p><strong>Стаж:</strong> ${doctor.experience}</p>
+              <p><strong>Ближайшие даты:</strong> ${nextThreeDates || "—"} </p>
+              <p><strong>Всего рабочих дней в графике:</strong> ${totalWorkDays}</p>
+            `;
+            container.appendChild(doctorCard);
+            doctorCount++;
+          });
+
+          if (doctorCount === 0) {
+            container.innerHTML = "<p>Нет данных о врачах. Попробуйте обновить страницу.</p>";
+          }
+        } else {
+          container.innerHTML = "<p>Врачи не найдены. Система должна была создать их автоматически.</p>";
+        }
+      })
+      .catch(error => {
+        console.error("Ошибка загрузки врачей:", error);
+        container.innerHTML = "<p>❌ Не удалось загрузить список врачей.</p>";
+      });
+  }
+
+  // === Загрузка врачей в выпадающий список для записи ===
+  function loadDoctorsToAppointmentSelect() {
+    const selectElement = document.getElementById("appDoctor");
+    if (!selectElement) return;
+
+    selectElement.innerHTML = '<option value="">— Выберите врача —</option>';
+    db.ref("staff").once("value")
+      .then(snapshot => {
+        snapshot.forEach(childSnapshot => {
+          const doctor = childSnapshot.val();
+          const option = document.createElement("option");
+          option.value = childSnapshot.key;
+          option.textContent = `${doctor.fio} (${doctor.specialty})`;
+          selectElement.appendChild(option);
+        });
+      });
   }
 
   // === Регистрация пациента ===
@@ -331,64 +518,94 @@
     const inn = document.getElementById("regInn").value.trim();
 
     if (!fio || !passport || !birth) {
-      alert("❌ Обязательно: ФИО, паспорт, дата рождения");
+      alert("❌ Обязательные поля: ФИО, паспорт, дата рождения.");
       return;
     }
 
-    const key = passport.replace(/\s+/g, "_");
-    db.ref("patients/" + key).set({
+    const patientKey = passport.replace(/\s+/g, "_");
+    const patientData = {
       fio, birth, gender, phone, email, address, passport, snils, inn,
       createdAt: new Date().toISOString()
-    }).then(() => {
-      alert("✅ Пациент зарегистрирован!");
-      document.querySelectorAll("#register input").forEach(el => el.value = "");
-    });
+    };
+
+    db.ref("patients/" + patientKey).set(patientData)
+      .then(() => {
+        alert("✅ Пациент успешно зарегистрирован!");
+        document.querySelectorAll("#register input, #register select, #register textarea").forEach(el => el.value = "");
+      })
+      .catch(error => {
+        console.error("Ошибка регистрации:", error);
+        alert("❌ Не удалось зарегистрировать пациента.");
+      });
   }
 
   // === Поиск пациента ===
   function searchPatient() {
-    const q = document.getElementById("searchQuery").value.trim().toLowerCase();
-    if (!q) return;
+    const query = document.getElementById("searchQuery").value.trim().toLowerCase();
+    if (!query) {
+      alert("Введите данные для поиска.");
+      return;
+    }
 
-    db.ref("patients").once("value", snap => {
-      let found = null;
-      snap.forEach(p => {
-        const pat = p.val();
-        const fields = [pat.fio, pat.passport, pat.snils, pat.phone, pat.email, pat.address];
-        if (fields.some(f => f && f.toLowerCase().includes(q))) {
-          found = { key: p.key, ...pat };
-          return false; // break
+    db.ref("patients").once("value")
+      .then(snapshot => {
+        let foundPatient = null;
+        snapshot.forEach(childSnapshot => {
+          const patient = childSnapshot.val();
+          const searchableFields = [
+            patient.fio,
+            patient.passport,
+            patient.snils,
+            patient.phone,
+            patient.email,
+            patient.address
+          ];
+          if (searchableFields.some(field => field && field.toLowerCase().includes(query))) {
+            foundPatient = { key: childSnapshot.key, ...patient };
+            return false;
+          }
+        });
+
+        const resultDiv = document.getElementById("searchResult");
+        const editForm = document.getElementById("editForm");
+        if (foundPatient) {
+          resultDiv.innerHTML = `
+            <p><strong>Найден пациент:</strong> ${foundPatient.fio}</p>
+            <p><strong>Паспорт:</strong> ${foundPatient.passport}</p>
+            <p><strong>Телефон:</strong> ${foundPatient.phone || "—"}</p>
+          `;
+          populateEditForm(foundPatient);
+          editForm.classList.remove("hidden");
+        } else {
+          resultDiv.innerHTML = "<p>❌ Пациент не найден.</p>";
+          editForm.classList.add("hidden");
         }
       });
-
-      const res = document.getElementById("searchResult");
-      const edit = document.getElementById("editForm");
-      if (found) {
-        res.innerHTML = `<p><b>${found.fio}</b><br>Паспорт: ${found.passport}<br>Телефон: ${found.phone || '—'}</p>`;
-        document.getElementById("editKey").value = found.key;
-        document.getElementById("editFio").value = found.fio || '';
-        document.getElementById("editBirth").value = found.birth || '';
-        document.getElementById("editGender").value = found.gender || '';
-        document.getElementById("editPhone").value = found.phone || '';
-        document.getElementById("editEmail").value = found.email || '';
-        document.getElementById("editAddress").value = found.address || '';
-        document.getElementById("editPassport").value = found.passport || '';
-        document.getElementById("editSnils").value = found.snils || '';
-        document.getElementById("editInn").value = found.inn || '';
-        edit.classList.remove("hidden");
-      } else {
-        res.innerHTML = "❌ Пациент не найден";
-        edit.classList.add("hidden");
-      }
-    });
   }
 
-  // === Сохранение изменений ===
+  // === Заполнение формы редактирования ===
+  function populateEditForm(patient) {
+    document.getElementById("editKey").value = patient.key;
+    document.getElementById("editFio").value = patient.fio || '';
+    document.getElementById("editBirth").value = patient.birth || '';
+    document.getElementById("editGender").value = patient.gender || '';
+    document.getElementById("editPhone").value = patient.phone || '';
+    document.getElementById("editEmail").value = patient.email || '';
+    document.getElementById("editAddress").value = patient.address || '';
+    document.getElementById("editPassport").value = patient.passport || '';
+    document.getElementById("editSnils").value = patient.snils || '';
+    document.getElementById("editInn").value = patient.inn || '';
+  }
+
+  // === Сохранение изменений пациента ===
   function savePatient() {
     const key = document.getElementById("editKey").value;
-    if (!key) return alert("❌ Ошибка ключа");
+    if (!key) {
+      alert("❌ Ошибка: отсутствует идентификатор пациента.");
+      return;
+    }
 
-    const data = {
+    const updatedData = {
       fio: document.getElementById("editFio").value.trim(),
       birth: document.getElementById("editBirth").value,
       gender: document.getElementById("editGender").value,
@@ -400,159 +617,237 @@
       inn: document.getElementById("editInn").value.trim()
     };
 
-    if (!data.fio || !data.passport) return alert("❌ ФИО и паспорт обязательны");
+    if (!updatedData.fio || !updatedData.passport) {
+      alert("❌ Обязательные поля: ФИО и паспорт.");
+      return;
+    }
 
-    db.ref("patients/" + key).update(data).then(() => {
-      alert("✅ Данные обновлены!");
-      document.getElementById("editForm").classList.add("hidden");
-      document.getElementById("searchQuery").value = "";
-      document.getElementById("searchResult").innerHTML = "<p>Изменения сохранены.</p>";
-    });
+    db.ref("patients/" + key).update(updatedData)
+      .then(() => {
+        alert("✅ Данные пациента успешно обновлены!");
+        document.getElementById("editForm").classList.add("hidden");
+        document.getElementById("searchQuery").value = "";
+        document.getElementById("searchResult").innerHTML = "<p>Изменения сохранены.</p>";
+      })
+      .catch(error => {
+        console.error("Ошибка обновления:", error);
+        alert("❌ Не удалось сохранить изменения.");
+      });
   }
 
+  // === Отмена редактирования ===
   function cancelEdit() {
     document.getElementById("editForm").classList.add("hidden");
   }
 
-  // === Запись к врачу ===
-  document.getElementById("appDoctor").addEventListener("change", updateAvailableTimes);
-  document.getElementById("appDate").addEventListener("change", updateAvailableTimes);
+  // === Обновление доступного времени при выборе врача или даты ===
+  document.addEventListener("DOMContentLoaded", () => {
+    const doctorSelect = document.getElementById("appDoctor");
+    const dateInput = document.getElementById("appDate");
+    if (doctorSelect && dateInput) {
+      doctorSelect.addEventListener("change", updateAvailableTimes);
+      dateInput.addEventListener("change", updateAvailableTimes);
+    }
+  });
 
   function updateAvailableTimes() {
-    const docId = document.getElementById("appDoctor").value;
-    const date = document.getElementById("appDate").value;
-    const sel = document.getElementById("appTime");
-    sel.innerHTML = '<option value="">— Выберите время —</option>';
-    if (!docId || !date) return;
+    const doctorId = document.getElementById("appDoctor")?.value;
+    const selectedDate = document.getElementById("appDate")?.value;
+    const timeSelect = document.getElementById("appTime");
+    if (!doctorId || !selectedDate || !timeSelect) return;
 
-    db.ref(`staff/${docId}/schedule/${date}`).once("value", scheduleSnap => {
-      const all = scheduleSnap.val() || [];
-      db.ref("appointments").orderByChild("doctorDate").equalTo(`${docId}_${date}`).once("value", appts => {
-        const busy = {};
-        appts.forEach(a => { busy[a.val().time] = true; });
-        all.filter(t => !busy[t]).forEach(t => {
-          const opt = document.createElement("option");
-          opt.value = t;
-          opt.textContent = t;
-          sel.appendChild(opt);
+    timeSelect.innerHTML = '<option value="">— Выберите время —</option>';
+
+    db.ref(`staff/${doctorId}/schedule/${selectedDate}`).once("value")
+      .then(scheduleSnapshot => {
+        const allSlots = scheduleSnapshot.val() || [];
+        return db.ref("appointments")
+          .orderByChild("doctorDate")
+          .equalTo(`${doctorId}_${selectedDate}`)
+          .once("value")
+          .then(appointmentsSnapshot => {
+            const busyTimes = {};
+            appointmentsSnapshot.forEach(appointment => {
+              const appointmentData = appointment.val();
+              busyTimes[appointmentData.time] = true;
+            });
+            return { allSlots, busyTimes };
+          });
+      })
+      .then(({ allSlots, busyTimes }) => {
+        allSlots.forEach(timeSlot => {
+          if (!busyTimes[timeSlot]) {
+            const option = document.createElement("option");
+            option.value = timeSlot;
+            option.textContent = timeSlot;
+            timeSelect.appendChild(option);
+          }
         });
+      })
+      .catch(error => {
+        console.error("Ошибка загрузки времени:", error);
       });
-    });
   }
 
+  // === Запись к врачу ===
   function bookAppointment() {
-    const passport = document.getElementById("appPassport").value.trim();
-    const docId = document.getElementById("appDoctor").value;
-    const date = document.getElementById("appDate").value;
-    const time = document.getElementById("appTime").value;
+    const passport = document.getElementById("appPassport")?.value.trim();
+    const doctorId = document.getElementById("appDoctor")?.value;
+    const appointmentDate = document.getElementById("appDate")?.value;
+    const appointmentTime = document.getElementById("appTime")?.value;
 
-    if (!passport || !docId || !date || !time) {
-      alert("❌ Все поля обязательны");
+    if (!passport || !doctorId || !appointmentDate || !appointmentTime) {
+      alert("❌ Пожалуйста, заполните все поля.");
       return;
     }
 
-    const key = `${date}_${docId}_${time}`;
+    const appointmentKey = `${appointmentDate}_${doctorId}_${appointmentTime}`;
     const ticketId = "T" + Date.now().toString(36).toUpperCase();
 
-    db.ref("appointments/" + key).set({
+    const appointmentData = {
       patientPassport: passport,
-      doctorId: docId,
-      date, time,
-      ticketId,
-      doctorDate: `${docId}_${date}`,
+      doctorId: doctorId,
+      date: appointmentDate,
+      time: appointmentTime,
+      ticketId: ticketId,
+      doctorDate: `${doctorId}_${appointmentDate}`,
       status: "confirmed",
       createdAt: new Date().toISOString()
-    }).then(() => {
-      document.getElementById("appResult").innerHTML = "✅ Запись создана!";
-      showTicket(passport, docId, date, time, ticketId);
-      updateAvailableTimes();
-    });
+    };
+
+    db.ref("appointments/" + appointmentKey).set(appointmentData)
+      .then(() => {
+        document.getElementById("appResult").innerHTML = "✅ Запись успешно создана!";
+        generateAndShowTicket(passport, doctorId, appointmentDate, appointmentTime, ticketId);
+        updateAvailableTimes();
+      })
+      .catch(error => {
+        console.error("Ошибка записи:", error);
+        alert("❌ Не удалось создать запись.");
+      });
   }
 
-  // === Талон ===
-  function showTicket(passport, doctorId, date, time, ticketId) {
+  // === Генерация и отображение талона ===
+  function generateAndShowTicket(passport, doctorId, date, time, ticketId) {
     Promise.all([
       db.ref("patients/" + passport.replace(/\s+/g, "_")).once("value"),
       db.ref("staff/" + doctorId).once("value")
-    ]).then(([patSnap, docSnap]) => {
-      const pat = patSnap.val();
-      const doc = docSnap.val();
+    ])
+    .then(([patientSnapshot, doctorSnapshot]) => {
+      const patient = patientSnapshot.val();
+      const doctor = doctorSnapshot.val();
 
-      const html = `
-        <div class="ticket" id="ticketPrint">
-          <div class="ticket-header">
-            <h2>Поликлиника «Ренессанс»</h2>
-            <p>Талон на приём</p>
-          </div>
-          <div class="ticket-body">
-            <p><b>Пациент:</b> ${pat?.fio || '—'}</p>
-            <p><b>Врач:</b> ${doc?.fio || '—'} (${doc?.specialty || '—'})</p>
-            <p><b>Дата и время:</b> ${date} в ${time}</p>
-            <p><b>Кабинет:</b> 305</p>
-            <p class="ticket-id">ID талона: ${ticketId}</p>
-          </div>
-          <div class="ticket-footer">Пожалуйста, приходите за 10 минут до приёма.</div>
+      const ticketHTML = `
+        <div class="ticket" id="printableTicket">
+          <h3>Талон на приём в поликлинику «Ренессанс»</h3>
+          <p><strong>Пациент:</strong> ${patient?.fio || "—"}</p>
+          <p><strong>Врач:</strong> ${doctor?.fio || "—"} (${doctor?.specialty || "—"})</p>
+          <p><strong>Дата и время:</strong> ${date} в ${time}</p>
+          <p><strong>Кабинет:</strong> 305</p>
+          <p class="ticket-id">Уникальный ID талона: ${ticketId}</p>
+          <p style="margin-top: 15px; font-size: 0.9rem; color: #555;">
+            Пожалуйста, приходите за 10 минут до начала приёма.<br>
+            При себе иметь паспорт и СНИЛС.
+          </p>
         </div>
-        <button onclick="window.print()">🖨️ Распечатать талон</button>
+        <button onclick="window.print()" style="margin-top: 15px;">🖨️ Распечатать талон</button>
       `;
-      document.getElementById("ticketContainer").innerHTML = html;
+      document.getElementById("ticketContainer").innerHTML = ticketHTML;
       document.querySelector('.tab-btn[data-tab="tickets"]').click();
+    })
+    .catch(error => {
+      console.error("Ошибка генерации талона:", error);
     });
   }
 
-  // === Медкарта ===
+  // === Загрузка медицинской карты ===
   function loadMedicalRecord() {
-    const passport = document.getElementById("medPassport").value.trim();
-    if (!passport) return;
-    const key = passport.replace(/\s+/g, "_");
-    db.ref("medicalRecords/" + key).once("value", snap => {
-      const data = snap.val();
-      const div = document.getElementById("medicalData");
-      if (!data || !data.visits || data.visits.length === 0) {
-        div.innerHTML = "<p>Медкарта пуста.</p>";
-        return;
-      }
-      div.innerHTML = data.visits.reverse().map(v => 
-        `<p><b>${v.date}</b><br>🩺 Диагноз: ${v.diagnosis || '—'}<br>📝 Заключение: ${v.conclusion || '—'}<br>💊 Назначения: ${v.prescription || '—'}</p><hr>`
-      ).join("");
-    });
+    const passport = document.getElementById("medPassport")?.value.trim();
+    if (!passport) {
+      alert("Введите паспорт пациента.");
+      return;
+    }
+
+    const recordKey = passport.replace(/\s+/g, "_");
+    db.ref("medicalRecords/" + recordKey).once("value")
+      .then(snapshot => {
+        const recordData = snapshot.val();
+        const medicalDataDiv = document.getElementById("medicalData");
+        if (!recordData || !recordData.visits || recordData.visits.length === 0) {
+          medicalDataDiv.innerHTML = "<p>Медицинская карта пуста.</p>";
+          return;
+        }
+
+        const visits = recordData.visits.sort((a, b) => b.timestamp - a.timestamp);
+        let html = "<h4>История посещений:</h4>";
+        visits.forEach(visit => {
+          html += `
+            <div style="padding: 10px; border-left: 3px solid var(--primary); margin: 10px 0;">
+              <p><strong>Дата:</strong> ${visit.date}</p>
+              <p><strong>Диагноз:</strong> ${visit.diagnosis || "—"}</p>
+              <p><strong>Заключение:</strong> ${visit.conclusion || "—"}</p>
+              <p><strong>Назначения:</strong> ${visit.prescription || "—"}</p>
+              <p><em>Врач: ${visit.doctor || "—"}</em></p>
+            </div>
+            <hr style="margin: 15px 0;">
+          `;
+        });
+        medicalDataDiv.innerHTML = html;
+      })
+      .catch(error => {
+        console.error("Ошибка загрузки медкарты:", error);
+        document.getElementById("medicalData").innerHTML = "<p>❌ Не удалось загрузить медкарту.</p>";
+      });
   }
 
+  // === Добавление записи в медкарту ===
   function addMedicalVisit() {
-    const passport = document.getElementById("medPassport").value.trim();
-    const diagnosis = document.getElementById("medDiagnosis").value.trim();
-    const conclusion = document.getElementById("medConclusion").value.trim();
-    const prescription = document.getElementById("medPrescription").value.trim();
+    const passport = document.getElementById("medPassport")?.value.trim();
+    const diagnosis = document.getElementById("medDiagnosis")?.value.trim();
+    const conclusion = document.getElementById("medConclusion")?.value.trim();
+    const prescription = document.getElementById("medPrescription")?.value.trim();
 
-    if (!passport) return alert("Укажите паспорт");
-    const key = passport.replace(/\s+/g, "_");
+    if (!passport) {
+      alert("Укажите паспорт пациента.");
+      return;
+    }
+
+    const recordKey = passport.replace(/\s+/g, "_");
     const newVisit = {
       date: new Date().toISOString().split('T')[0],
-      diagnosis,
-      conclusion,
-      prescription,
-      doctor: "Администратор",
+      diagnosis: diagnosis,
+      conclusion: conclusion,
+      prescription: prescription,
+      doctor: "Администратор системы",
       timestamp: Date.now()
     };
 
-    db.ref("medicalRecords/" + key).transaction(record => {
-      if (!record) record = { visits: [] };
-      record.visits.push(newVisit);
-      return record;
-    }).then(() => {
-      alert("✅ Запись добавлена в медкарту");
+    db.ref("medicalRecords/" + recordKey).transaction(currentData => {
+      if (!currentData) currentData = { visits: [] };
+      if (!currentData.visits) currentData.visits = [];
+      currentData.visits.push(newVisit);
+      return currentData;
+    })
+    .then(() => {
+      alert("✅ Запись добавлена в медицинскую карту.");
       loadMedicalRecord();
-      ["medDiagnosis", "medConclusion", "medPrescription"].forEach(id => {
-        document.getElementById(id).value = "";
-      });
+      document.getElementById("medDiagnosis").value = "";
+      document.getElementById("medConclusion").value = "";
+      document.getElementById("medPrescription").value = "";
+    })
+    .catch(error => {
+      console.error("Ошибка добавления в медкарту:", error);
+      alert("❌ Не удалось добавить запись.");
     });
   }
 
-  // === Инициализация ===
-  window.addEventListener('load', () => {
+  // === Установка минимальной даты для календарей ===
+  window.addEventListener("load", () => {
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById("appDate")?.setAttribute("min", today);
-    document.getElementById("regBirth")?.setAttribute("max", today);
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    dateInputs.forEach(input => {
+      input.setAttribute("min", today);
+    });
   });
 </script>
 </body>
