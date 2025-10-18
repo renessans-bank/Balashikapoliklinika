@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Поликлиника «Ренессанс» — Балашиха, 50 врачей, 365 дней</title>
+  <title>Поликлиника «Ренессанс» — Госпитализация, Балашиха, 50 врачей</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
@@ -283,6 +283,16 @@
       gap: 8px;
       margin-top: 8px;
     }
+    .hospital-form {
+      background: #fff8e1;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+    }
+    .hospital-form h4 {
+      margin-top: 0;
+      color: #e65100;
+    }
   </style>
 </head>
 <body>
@@ -313,6 +323,7 @@
     <button class="tab-btn" data-tab="doctors">👨‍⚕️ Врачи (50)</button>
     <button class="tab-btn" data-tab="register">➕ Пациенты</button>
     <button class="tab-btn" data-tab="appointment">📅 Новая запись</button>
+    <button class="tab-btn" data-tab="hospital">🛏️ Госпитализация</button>
     <button class="tab-btn" data-tab="myAppointments">📋 Мои записи</button>
     <button class="tab-btn" data-tab="medical">🩺 Медкарта</button>
     <button class="tab-btn" data-tab="tickets">🎫 Талоны</button>
@@ -335,9 +346,13 @@
         <div class="stat-value" id="statDoctors">50</div>
         <div>Врачей</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statHospital">—</div>
+        <div>Госпитализаций</div>
+      </div>
     </div>
     <p style="margin-top: 20px;">Слоты времени: <b>с 09:00 до 18:30</b> с интервалом 30 минут (пн–пт).<br>
-    Адреса пациентов: только <b>г. Балашиха, Московская область</b>.</p>
+    Адреса: только <b>г. Балашиха, Московская область</b>.</p>
   </div>
 
   <!-- ВРАЧИ -->
@@ -433,6 +448,23 @@
     <div id="appResult" class="result"></div>
   </div>
 
+  <!-- ГОСПИТАЛИЗАЦИЯ -->
+  <div id="hospital" class="card tab-content hidden">
+    <h3>🛏️ Направление на госпитализацию</h3>
+    <input id="hospPassport" placeholder="Паспорт пациента" />
+    <select id="hospDoctor"><option value="">— Врач, рекомендовавший госпитализацию —</option></select>
+    <textarea id="hospReason" placeholder="Причина госпитализации (диагноз, состояние)" rows="3"></textarea>
+    
+    <div class="hospital-form">
+      <h4>Сроки госпитализации</h4>
+      <input id="hospStartDate" type="date" placeholder="Дата поступления" />
+      <input id="hospEndDate" type="date" placeholder="Дата выписки (ориентировочно)" />
+    </div>
+    
+    <button class="btn-danger" onclick="submitHospitalization()">✅ Оформить направление</button>
+    <div id="hospResult" class="result"></div>
+  </div>
+
   <!-- УПРАВЛЕНИЕ ЗАПИСЯМИ -->
   <div id="myAppointments" class="card tab-content hidden">
     <h3>Редактирование и отмена записей</h3>
@@ -477,7 +509,7 @@
   </div>
 
   <div class="footer-note">
-    Поликлиника «Ренессанс» — г. Балашиха | 50 врачей | График на 365 дней | © 2025
+    Поликлиника «Ренессанс» — г. Балашиха | Госпитализация | 50 врачей | 365 дней | © 2025
   </div>
 </div>
 
@@ -524,6 +556,7 @@
       document.getElementById("mainApp").classList.remove("hidden");
       log("Вход выполнен. Инициализация...");
       initializeSystemWith50Doctors();
+      loadDoctorsToHospitalSelect();
       loadStats();
     } else {
       alert("❌ Неверный логин или пароль.");
@@ -646,9 +679,26 @@
       });
   }
 
-  // === Загрузка в селект ===
+  // === Загрузка в селект записи ===
   function loadDoctorsToSelect() {
     const sel = document.getElementById("appDoctor");
+    sel.innerHTML = '<option value="">— Выберите врача —</option>';
+    db.ref("staff").once("value")
+      .then(snapshot => {
+        snapshot.forEach(doc => {
+          const d = doc.val();
+          const opt = document.createElement("option");
+          opt.value = doc.key;
+          opt.textContent = `${d.fio} (${d.specialty})`;
+          sel.appendChild(opt);
+        });
+      });
+  }
+
+  // === Загрузка в селект госпитализации ===
+  function loadDoctorsToHospitalSelect() {
+    const sel = document.getElementById("hospDoctor");
+    if (!sel) return;
     sel.innerHTML = '<option value="">— Выберите врача —</option>';
     db.ref("staff").once("value")
       .then(snapshot => {
@@ -859,7 +909,7 @@
     }).then(() => {
       alert("✅ Запись подтверждена!");
       showTicket(passport, docId, date, time, ticketId);
-      updateAvailableTimes();
+      updateAvailableTimes(); // обновить список времени
     });
   }
 
@@ -883,6 +933,37 @@
         <button onclick="window.print()">🖨️ Распечатать</button>
       `;
       document.querySelector('.tab-btn[data-tab="tickets"]').click();
+    });
+  }
+
+  // === ГОСПИТАЛИЗАЦИЯ ===
+  function submitHospitalization() {
+    const passport = document.getElementById("hospPassport").value.trim();
+    const doctorId = document.getElementById("hospDoctor").value;
+    const reason = document.getElementById("hospReason").value.trim();
+    const startDate = document.getElementById("hospStartDate").value;
+    const endDate = document.getElementById("hospEndDate").value;
+
+    if (!passport || !doctorId || !reason || !startDate) {
+      alert("❌ Заполните все поля.");
+      return;
+    }
+
+    const key = "hosp_" + Date.now().toString(36);
+    db.ref("hospitalizations/" + key).set({
+      patientPassport: passport,
+      doctorId: doctorId,
+      reason: reason,
+      startDate: startDate,
+      endDate: endDate,
+      status: "active",
+      createdAt: new Date().toISOString()
+    }).then(() => {
+      alert("✅ Направление на госпитализацию оформлено!");
+      document.getElementById("hospResult").innerHTML = "✅ Пациент направлен в стационар.";
+      ["hospPassport", "hospReason"].forEach(id => document.getElementById(id).value = "");
+      document.getElementById("hospStartDate").value = "";
+      document.getElementById("hospEndDate").value = "";
     });
   }
 
@@ -1060,6 +1141,9 @@
     const today = new Date().toISOString().split('T')[0];
     db.ref("appointments").orderByChild("date").equalTo(today).once("value").then(snap => {
       document.getElementById("statAppointments").textContent = snap.numChildren();
+    });
+    db.ref("hospitalizations").once("value").then(snap => {
+      document.getElementById("statHospital").textContent = snap.numChildren();
     });
   }
 
